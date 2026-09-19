@@ -1,1 +1,480 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>人間育成</title>
 
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #222;
+      color: white;
+    }
+
+    .game {
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .box {
+      background: #333;
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+
+    .status {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .stat {
+      background: #444;
+      padding: 8px;
+      border-radius: 6px;
+    }
+
+    .hp-bar {
+      background: #555;
+      height: 20px;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .hp {
+      background: #e74c3c;
+      height: 100%;
+      width: 100%;
+      transition: width 0.3s;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 8px;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+
+    #attackButton {
+      background: #e67e22;
+      color: white;
+    }
+
+    #restartButton {
+      background: #555;
+      color: white;
+    }
+
+    #log {
+      height: 150px;
+      overflow-y: auto;
+      background: #111;
+      padding: 10px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="game">
+
+  <h1>現実世界ハクスラ</h1>
+
+  <div class="box">
+    <h2>ステージ1：草原</h2>
+
+    <h3>学生 Lv.<span id="playerLevel">1</span></h3>
+
+    <div>
+      HP: <span id="playerHp">100</span> /
+      <span id="playerMaxHp">100</span>
+    </div>
+
+    <div class="hp-bar">
+      <div id="playerHpBar" class="hp"></div>
+    </div>
+
+    <br>
+
+    <div class="status">
+      <div class="stat">ATK: <span id="atk">10</span></div>
+      <div class="stat">DEF: <span id="def">5</span></div>
+      <div class="stat">SPD: <span id="spd">8</span></div>
+      <div class="stat">LUK: <span id="luk">3</span></div>
+    </div>
+
+    <p>武器：石ころ</p>
+  </div>
+
+
+  <div class="box">
+
+    <h2>敵：草原のスライム</h2>
+
+    <div>
+      HP: <span id="enemyHp">30</span> /
+      <span id="enemyMaxHp">30</span>
+    </div>
+
+    <div class="hp-bar">
+      <div id="enemyHpBar" class="hp"></div>
+    </div>
+
+    <p>ATK: 5　DEF: 2</p>
+
+  </div>
+
+
+  <div class="box">
+
+    <button id="attackButton" onclick="attack()">
+      攻撃する
+    </button>
+
+    <button id="restartButton" onclick="restart()">
+      リスタート
+    </button>
+
+  </div>
+
+
+  <div class="box">
+    <h3>戦闘ログ</h3>
+    <div id="log"></div>
+  </div>
+
+</div>
+
+
+<script>
+
+  // =========================
+  // プレイヤー
+  // =========================
+
+  let player = {
+    level: 1,
+    exp: 0,
+    maxHp: 100,
+    hp: 100,
+    atk: 10,
+    def: 5,
+    spd: 8,
+    luk: 3
+  };
+
+
+  // =========================
+  // 敵
+  // =========================
+
+  let enemy = {
+    name: "草原のスライム",
+    maxHp: 30,
+    hp: 30,
+    atk: 5,
+    def: 2,
+    exp: 20
+  };
+
+
+  // =========================
+  // 攻撃
+  // =========================
+
+  function attack() {
+
+    if (player.hp <= 0) {
+      return;
+    }
+
+    if (enemy.hp <= 0) {
+      return;
+    }
+
+    // ダメージ計算
+    let damage = player.atk - enemy.def;
+
+    // 最低1ダメージ
+    if (damage < 1) {
+      damage = 1;
+    }
+
+    // LUKによるクリティカル
+    let critical = Math.random() * 100 < player.luk * 2;
+
+    if (critical) {
+      damage *= 2;
+
+      log(
+        "クリティカル！ " +
+        damage +
+        "ダメージ！"
+      );
+
+    } else {
+
+      log(
+        "プレイヤーの攻撃！ " +
+        damage +
+        "ダメージ！"
+      );
+    }
+
+    enemy.hp -= damage;
+
+    if (enemy.hp < 0) {
+      enemy.hp = 0;
+    }
+
+    updateScreen();
+
+
+    // 敵死亡
+    if (enemy.hp <= 0) {
+
+      log("スライムを倒した！");
+
+      gainExp(enemy.exp);
+
+      return;
+    }
+
+
+    // 敵の反撃
+    enemyAttack();
+  }
+
+
+  // =========================
+  // 敵の攻撃
+  // =========================
+
+  function enemyAttack() {
+
+    let damage = enemy.atk - player.def;
+
+    if (damage < 1) {
+      damage = 1;
+    }
+
+    player.hp -= damage;
+
+    if (player.hp < 0) {
+      player.hp = 0;
+    }
+
+    log(
+      enemy.name +
+      "の攻撃！ " +
+      damage +
+      "ダメージ！"
+    );
+
+    updateScreen();
+
+
+    if (player.hp <= 0) {
+
+      log("あなたは力尽きた……");
+
+      document.getElementById(
+        "attackButton"
+      ).disabled = true;
+    }
+  }
+
+
+  // =========================
+  // 経験値
+  // =========================
+
+  function gainExp(amount) {
+
+    player.exp += amount;
+
+    log(
+      amount +
+      " EXPを獲得！"
+    );
+
+    let requiredExp = player.level * 30;
+
+    if (player.exp >= requiredExp) {
+
+      player.exp -= requiredExp;
+
+      levelUp();
+    }
+  }
+
+
+  // =========================
+  // レベルアップ
+  // =========================
+
+  function levelUp() {
+
+    player.level++;
+
+    player.maxHp += 20;
+    player.hp = player.maxHp;
+
+    player.atk += 3;
+    player.def += 2;
+    player.spd += 1;
+    player.luk += 1;
+
+    log(
+      "レベルアップ！ Lv." +
+      player.level +
+      "になった！"
+    );
+
+    log(
+      "ステータスが上昇した！"
+    );
+
+    updateScreen();
+  }
+
+
+  // =========================
+  // 画面更新
+  // =========================
+
+  function updateScreen() {
+
+    document.getElementById(
+      "playerLevel"
+    ).textContent = player.level;
+
+    document.getElementById(
+      "playerHp"
+    ).textContent = player.hp;
+
+    document.getElementById(
+      "playerMaxHp"
+    ).textContent = player.maxHp;
+
+    document.getElementById(
+      "atk"
+    ).textContent = player.atk;
+
+    document.getElementById(
+      "def"
+    ).textContent = player.def;
+
+    document.getElementById(
+      "spd"
+    ).textContent = player.spd;
+
+    document.getElementById(
+      "luk"
+    ).textContent = player.luk;
+
+    document.getElementById(
+      "enemyHp"
+    ).textContent = enemy.hp;
+
+
+    // HPバー
+
+    let playerPercent =
+      player.hp / player.maxHp * 100;
+
+    let enemyPercent =
+      enemy.hp / enemy.maxHp * 100;
+
+    document.getElementById(
+      "playerHpBar"
+    ).style.width =
+      playerPercent + "%";
+
+    document.getElementById(
+      "enemyHpBar"
+    ).style.width =
+      enemyPercent + "%";
+  }
+
+
+  // =========================
+  // ログ
+  // =========================
+
+  function log(message) {
+
+    let logElement =
+      document.getElementById("log");
+
+    logElement.innerHTML +=
+      "<div>" + message + "</div>";
+
+    logElement.scrollTop =
+      logElement.scrollHeight;
+  }
+
+
+  // =========================
+  // リスタート
+  // =========================
+
+  function restart() {
+
+    player = {
+      level: 1,
+      exp: 0,
+      maxHp: 100,
+      hp: 100,
+      atk: 10,
+      def: 5,
+      spd: 8,
+      luk: 3
+    };
+
+    enemy = {
+      name: "草原のスライム",
+      maxHp: 30,
+      hp: 30,
+      atk: 5,
+      def: 2,
+      exp: 20
+    };
+
+    document.getElementById(
+      "attackButton"
+    ).disabled = false;
+
+    document.getElementById(
+      "log"
+    ).innerHTML = "";
+
+    log("草原に到着した。");
+
+    updateScreen();
+  }
+
+
+  // 最初の表示
+  updateScreen();
+
+  log("草原に到着した。");
+  log("敵が現れた！");
+
+</script>
+
+</body>
+</html>
