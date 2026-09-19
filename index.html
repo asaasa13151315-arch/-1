@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>現実世界ハクスラ</title>
+
+<style>
+
+body {
+    margin: 0;
+    background: #181818;
+    color: white;
+    font-family: sans-serif;
+}
+
+.game {
+    max-width: 600px;
+    margin: auto;
+    padding: 15px;
+}
+
+h1 {
+    text-align: center;
+}
+
+.box {
+    background: #292929;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+}
+
+.status {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.stat {
+    background: #3a3a3a;
+    padding: 9px;
+    border-radius: 6px;
+}
+
+.hp-bar {
+    background: #555;
+    height: 20px;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.hp {
+    background: #e74c3c;
+    height: 100%;
+    width: 100%;
+    transition: width 0.3s;
+}
+
+button {
+    width: 100%;
+    padding: 13px;
+    margin-top: 8px;
+    border: none;
+    border-radius: 8px;
+    font-size: 17px;
+    cursor: pointer;
+}
+
+.attack {
+    background: #e67e22;
+    color: white;
+}
+
+.equip {
+    background: #3498db;
+    color: white;
+}
+
+.restart {
+    background: #555;
+    color: white;
+}
+
+.weapon {
+    background: #3a3a3a;
+    padding: 12px;
+    border-radius: 8px;
+    margin-top: 8px;
+}
+
+.common {
+    border-left: 5px solid #aaa;
+}
+
+.uncommon {
+    border-left: 5px solid #4caf50;
+}
+
+.rare {
+    border-left: 5px solid #2196f3;
+}
+
+.epic {
+    border-left: 5px solid #9c27b0;
+}
+
+.legendary {
+    border-left: 5px solid #ff9800;
+}
+
+#log {
+    height: 160px;
+    overflow-y: auto;
+    background: #111;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+<h1>現実世界ハクスラ</h1>
+
+<div class="box">
+
+<h2>ステージ1：草原</h2>
+
+<h3>
+学生 Lv.<span id="level">1</span>
+</h3>
+
+<div>
+HP:
+<span id="hp">100</span> /
+<span id="maxHp">100</span>
+</div>
+
+<div class="hp-bar">
+<div id="playerHpBar" class="hp"></div>
+</div>
+
+<br>
+
+<div class="status">
+
+<div class="stat">
+ATK：<span id="atk">10</span>
+</div>
+
+<div class="stat">
+DEF：<span id="def">5</span>
+</div>
+
+<div class="stat">
+SPD：<span id="spd">8</span>
+</div>
+
+<div class="stat">
+LUK：<span id="luk">3</span>
+</div>
+
+</div>
+
+<p>
+現在の武器：
+<span id="equippedWeapon">石ころ</span>
+</p>
+
+</div>
+
+
+<div class="box">
+
+<h2>
+敵：
+<span id="enemyName">草原のスライム</span>
+</h2>
+
+HP：
+<span id="enemyHp">30</span> /
+<span id="enemyMaxHp">30</span>
+
+<div class="hp-bar">
+<div id="enemyHpBar" class="hp"></div>
+</div>
+
+<p>
+ATK：<span id="enemyAtk">5</span>
+　
+DEF：<span id="enemyDef">2</span>
+</p>
+
+</div>
+
+
+<div class="box">
+
+<button
+class="attack"
+onclick="attack()">
+攻撃する
+</button>
+
+<button
+class="restart"
+onclick="restart()">
+最初から
+</button>
+
+</div>
+
+
+<div class="box">
+
+<h2>入手武器</h2>
+
+<div id="inventory">
+まだ武器を持っていません。
+</div>
+
+</div>
+
+
+<div class="box">
+
+<h2>戦闘ログ</h2>
+
+<div id="log"></div>
+
+</div>
+
+</div>
+
+
+<script>
+
+
+// =====================================
+// プレイヤー
+// =====================================
+
+let player = {
+
+    level: 1,
+
+    exp: 0,
+
+    maxHp: 100,
+
+    hp: 100,
+
+    baseAtk: 10,
+
+    baseDef: 5,
+
+    baseSpd: 8,
+
+    baseLuk: 3,
+
+    weapon: null
+
+};
+
+
+// =====================================
+// 武器データ
+// =====================================
+
+const weaponList = [
+
+    {
+        name: "石ころ",
+        rarity: "common",
+        atk: 2,
+        def: 0,
+        spd: 1,
+        luk: 0
+    },
+
+    {
+        name: "木の棒",
+        rarity: "common",
+        atk: 4,
+        def: 0,
+        spd: 0,
+        luk: 0
+    },
+
+    {
+        name: "フライパン",
+        rarity: "common",
+        atk: 7,
+        def: 3,
+        spd: -1,
+        luk: 0
+    },
+
+    {
+        name: "傘",
+        rarity: "common",
+        atk: 3,
+        def: 2,
+        spd: 2,
+        luk: 1
+    },
+
+    {
+        name: "モップ",
+        rarity: "uncommon",
+        atk: 8,
+        def: 2,
+        spd: 3,
+        luk: 0
+    },
+
+    {
+        name: "バット",
+        rarity: "uncommon",
+        atk: 12,
+        def: 0,
+        spd: -1,
+        luk: 0
+    },
+
+    {
+        name: "鉄パイプ",
+        rarity: "rare",
+        atk: 20,
+        def: 5,
+        spd: -2,
+        luk: 0
+    },
+
+    {
+        name: "包丁",
+        rarity: "rare",
+        atk: 15,
+        def: 0,
+        spd: 5,
+        luk: 2
+    },
+
+    {
+        name: "スマートフォン",
+        rarity: "epic",
+        atk: 5,
+        def: 5,
+        spd: 10,
+        luk: 8
+    },
+
+    {
+        name: "伝説のフライパン",
+        rarity: "legendary",
+        atk: 50,
+        def: 20,
+        spd: 5,
+        luk: 10
+    }
+
+];
+
+
+// =====================================
+// 敵
+// =====================================
+
+let enemy = {
+
+    name: "草原のスライム",
+
+    maxHp: 30,
+
+    hp: 30,
+
+    atk: 5,
+
+    def: 2,
+
+    exp: 20
+
+};
+
+
+// =====================================
+// レアリティ
+// =====================================
+
+const rarityName = {
+
+    common: "コモン",
+
+    uncommon: "アンコモン",
+
+    rare: "レア",
+
+    epic: "エピック",
+
+    legendary: "レジェンダリー"
+
+};
+
+
+// =====================================
+// インベントリ
+// =====================================
+
+let inventory = [];
+
+
+// =====================================
+// 現在のステータス
+// =====================================
+
+function getStats() {
+
+    let weapon = player.weapon;
+
+    return {
+
+        atk:
+            player.baseAtk +
+            (weapon ? weapon.atk : 0),
+
+        def:
+            player.baseDef +
+            (weapon ? weapon.def : 0),
+
+        spd:
+            player.baseSpd +
+            (weapon ? weapon.spd : 0),
+
+        luk:
+            player.baseLuk +
+            (weapon ? weapon.luk : 0)
+
+    };
+
+}
+
+
+// =====================================
+// 攻撃
+// =====================================
+
+function attack() {
+
+    if (player.hp <= 0) {
+        return;
+    }
+
+    if (enemy.hp <= 0) {
+        return;
+    }
+
+
+    let stats = getStats();
+
+
+    let damage =
+        stats.atk -
+        enemy.def;
+
+
+    if (damage < 1) {
+        damage = 1;
+    }
+
+
+    // クリティカル
+
+    let critical =
+        Math.random() * 100 <
+        stats.luk * 2;
+
+
+    if (critical) {
+
+        damage *= 2;
+
+        log(
+            "クリティカル！ " +
+            damage +
+            "ダメージ！"
+        );
+
+    } else {
+
+        log(
+            "攻撃！ " +
+            damage +
+            "ダメージ！"
+        );
+
+    }
+
+
+    enemy.hp -= damage;
+
+
+    if (enemy.hp < 0) {
+        enemy.hp = 0;
+    }
+
+
+    updateScreen();
+
+
+    // 敵死亡
+
+    if (enemy.hp <= 0) {
+
+        log(
+            enemy.name +
+            "を倒した！"
+        );
+
+        gainExp(enemy.exp);
+
+        dropWeapon();
+
+        setTimeout(
+            spawnEnemy,
+            700
+        );
+
+        return;
+    }
+
+
+    // 反撃
+
+    enemyAttack();
+
+}
+
+
+// =====================================
+// 敵の攻撃
+// =====================================
+
+function enemyAttack() {
+
+    let stats = getStats();
+
+
+    let damage =
+        enemy.atk -
+        stats.def;
+
+
+    if (damage < 1) {
+        damage = 1;
+    }
+
+
+    player.hp -= damage;
+
+
+    if (player.hp < 0) {
+        player.hp = 0;
+    }
+
+
+    log(
+        enemy.name +
+        "の攻撃！ " +
+        damage +
+        "ダメージ！"
+    );
+
+
+    updateScreen();
+
+
+    if (player.hp <= 0) {
+
+        log(
+            "あなたは力尽きた……"
+        );
+
+    }
+
+}
+
+
+// =====================================
+// 武器ドロップ
+// =====================================
+
+function dropWeapon() {
+
+
+    let weapon =
+        weaponList[
+            Math.floor(
+                Math.random() *
+                weaponList.length
+            )
+        ];
+
+
+    // 個体差
+    // 同じ武器でも少し性能が違う
+
+    let droppedWeapon = {
+
+        ...weapon,
+
+        atk:
+            weapon.atk +
+            randomBonus(),
+
+        def:
+            weapon.def +
+            randomBonus(),
+
+        spd:
+            weapon.spd +
+            randomBonus(),
+
+        luk:
+            weapon.luk +
+            randomBonus()
+
+    };
+
+
+    inventory.push(
+        droppedWeapon
+    );
+
+
+    log(
+        "武器ドロップ！ " +
+        rarityName[droppedWeapon.rarity] +
+        "「" +
+        droppedWeapon.name +
+        "」"
+    );
+
+
+    renderInventory();
+
+}
+
+
+// =====================================
+// ランダム補正
+// =====================================
+
+function randomBonus() {
+
+    let roll =
+        Math.random();
+
+    if (roll < 0.65) {
+        return 0;
+    }
+
+    if (roll < 0.90) {
+        return 1;
+    }
+
+    return 2;
+
+}
+
+
+// =====================================
+// 武器装備
+// =====================================
+
+function equipWeapon(index) {
+
+    player.weapon =
+        inventory[index];
+
+
+    log(
+        "「" +
+        player.weapon.name +
+        "」を装備した！"
+    );
+
+
+    renderInventory();
+
+    updateScreen();
+
+}
+
+
+// =====================================
+// インベントリ表示
+// =====================================
+
+function renderInventory() {
+
+    let area =
+        document.getElementById(
+            "inventory"
+        );
+
+
+    area.innerHTML = "";
+
+
+    inventory.forEach(
+        (weapon, index) => {
+
+            let div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.className =
+                "weapon " +
+                weapon.rarity;
+
+
+            div.innerHTML = `
+
+                <strong>
+                    ${rarityName[weapon.rarity]}
+                    ${weapon.name}
+                </strong>
+
+                <br>
+
+                ATK +${weapon.atk}
+               　
+                DEF +${weapon.def}
+
+                <br>
+
+                SPD ${weapon.spd >= 0 ? "+" : ""}
+                ${weapon.spd}
+
+               　
+                LUK ${weapon.luk >= 0 ? "+" : ""}
+                ${weapon.luk}
+
+                <button
+                    class="equip"
+                    onclick="equipWeapon(${index})">
+
+                    装備する
+
+                </button>
+
+            `;
+
+
+            area.appendChild(div);
+
+        }
+    );
+
+}
+
+
+// =====================================
+// 経験値
+// =====================================
+
+function gainExp(amount) {
+
+    player.exp += amount;
+
+
+    log(
+        amount +
+        " EXP獲得！"
+    );
+
+
+    let required =
+        player.level * 30;
+
+
+    while (
+        player.exp >= required
+    ) {
+
+        player.exp -= required;
+
+        levelUp();
+
+        required =
+            player.level * 30;
+
+    }
+
+}
+
+
+// =====================================
+// レベルアップ
+// =====================================
+
+function levelUp() {
+
+    player.level++;
+
+
+    player.maxHp += 20;
+
+    player.hp =
+        player.maxHp;
+
+
+    player.baseAtk += 3;
+
+    player.baseDef += 2;
+
+    player.baseSpd += 1;
+
+    player.baseLuk += 1;
+
+
+    log(
+        "レベルアップ！ " +
+        "Lv." +
+        player.level
+    );
+
+
+    updateScreen();
+
+}
+
+
+// =====================================
+// 新しい敵
+// =====================================
+
+function spawnEnemy() {
+
+    let level =
+        player.level;
+
+
+    let hp =
+        30 +
+        level * 5;
+
+
+    enemy = {
+
+        name: "草原のスライム",
+
+        maxHp: hp,
+
+        hp: hp,
+
+        atk:
+            5 +
+            level,
+
+        def:
+            2 +
+            Math.floor(
+                level / 3
+            ),
+
+        exp:
+            20 +
+            level * 5
+
+    };
+
+
+    log(
+        "新しい敵が現れた！"
+    );
+
+
+    updateScreen();
+
+}
+
+
+// =====================================
+// 画面更新
+// =====================================
+
+function updateScreen() {
+
+    let stats =
+        getStats();
+
+
+    document.getElementById(
+        "level"
+    ).textContent =
+        player.level;
+
+
+    document.getElementById(
+        "hp"
+    ).textContent =
+        player.hp;
+
+
+    document.getElementById(
+        "maxHp"
+    ).textContent =
+        player.maxHp;
+
+
+    document.getElementById(
+        "atk"
+    ).textContent =
+        stats.atk;
+
+
+    document.getElementById(
+        "def"
+    ).textContent =
+        stats.def;
+
+
+    document.getElementById(
+        "spd"
+    ).textContent =
+        stats.spd;
+
+
+    document.getElementById(
+        "luk"
+    ).textContent =
+        stats.luk;
+
+
+    document.getElementById(
+        "enemyHp"
+    ).textContent =
+        enemy.hp;
+
+
+    document.getElementById(
+        "enemyMaxHp"
+    ).textContent =
+        enemy.maxHp;
+
+
+    document.getElementById(
+        "enemyAtk"
+    ).textContent =
+        enemy.atk;
+
+
+    document.getElementById(
+        "enemyDef"
+    ).textContent =
+        enemy.def;
+
+
+    document.getElementById(
+        "equippedWeapon"
+    ).textContent =
+        player.weapon
+        ? player.weapon.name
+        : "なし";
+
+
+    document.getElementById(
+        "playerHpBar"
+    ).style.width =
+        (
+            player.hp /
+            player.maxHp *
+            100
+        ) + "%";
+
+
+    document.getElementById(
+        "enemyHpBar"
+    ).style.width =
+        (
+            enemy.hp /
+            enemy.maxHp *
+            100
+        ) + "%";
+
+}
+
+
+// =====================================
+// ログ
+// =====================================
+
+function log(message) {
+
+    let area =
+        document.getElementById(
+            "log"
+        );
+
+
+    area.innerHTML +=
+        "<div>" +
+        message +
+        "</div>";
+
+
+    area.scrollTop =
+        area.scrollHeight;
+
+}
+
+
+// =====================================
+// リスタート
+// =====================================
+
+function restart() {
+
+    player = {
+
+        level: 1,
+
+        exp: 0,
+
+        maxHp: 100,
+
+        hp: 100,
+
+        baseAtk: 10,
+
+        baseDef: 5,
+
+        baseSpd: 8,
+
+        baseLuk: 3,
+
+        weapon: null
+
+    };
+
+
+    inventory = [];
+
+
+    enemy = {
+
+        name: "草原のスライム",
+
+        maxHp: 30,
+
+        hp: 30,
+
+        atk: 5,
+
+        def: 2,
+
+        exp: 20
+
+    };
+
+
+    document.getElementById(
+        "log"
+    ).innerHTML = "";
+
+
+    log(
+        "草原に到着した。"
+    );
+
+    log(
+        "敵が現れた！"
+    );
+
+
+    renderInventory();
+
+    updateScreen();
+
+}
+
+
+// =====================================
+// 起動
+// =====================================
+
+updateScreen();
+
+log(
+    "草原に到着した。"
+);
+
+log(
+    "敵が現れた！"
+);
+
+</script>
+
+</body>
+</html>
